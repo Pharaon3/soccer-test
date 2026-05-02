@@ -251,9 +251,27 @@ def fine_tune(args):
     model = get_trainable_module(model_wrapper)
     model.train()
 
-    # Convert class list from event_team=True format into action-only names.
-    # event_team=True usually duplicates left/right. For training here, use first half.
-    action_classes = classes[:len(classes) // 2]
+    # load_classes(..., event_team=True) returns a dict in this repo:
+    # example: {"Pass-left": 0, "Pass-right": 1, ...}
+    # We convert it into action-only names: Pass, Drive, Shot, etc.
+    action_class_names = []
+    
+    for name in classes.keys():
+        clean = name
+    
+        if clean.endswith("-left"):
+            clean = clean[:-5]
+        elif clean.endswith("-right"):
+            clean = clean[:-6]
+        elif clean.endswith(" left"):
+            clean = clean[:-5]
+        elif clean.endswith(" right"):
+            clean = clean[:-6]
+    
+        if clean not in action_class_names:
+            action_class_names.append(clean)
+    
+    action_classes = action_class_names
     class_to_idx = {c: i for i, c in enumerate(action_classes)}
 
     print("Classes:")
