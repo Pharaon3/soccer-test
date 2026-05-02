@@ -25,12 +25,10 @@ CLIP_LEN = 100
 
 
 LABEL_MAP = {
-    # Your JSON labels -> repo class names
     "pass": "PASS",
     "take_on": "DRIVE",
     "drive": "DRIVE",
 
-    # In your JSON, clearance/ball_out_of_play are mapped to OUT class
     "clearance": "OUT",
     "ball_out_of_play": "OUT",
     "out": "OUT",
@@ -59,11 +57,6 @@ def run(cmd):
 
 
 def extract_frames(video_path, frames_dir):
-    """
-    Extract video frames only once.
-    If frames already exist, reuse them.
-    """
-
     frames_dir = Path(frames_dir)
     existing = list(frames_dir.glob("frame*.jpg"))
 
@@ -88,28 +81,37 @@ def extract_frames(video_path, frames_dir):
 
     num_frames = len(list(frames_dir.glob("frame*.jpg")))
     print(f"Extracted frames: {num_frames}")
-
     return num_frames
 
 
+def clean_class_name(name):
+    name = name.upper().strip()
+
+    if name.endswith("-LEFT"):
+        name = name[:-5]
+    elif name.endswith("-RIGHT"):
+        name = name[:-6]
+    elif name.endswith(" LEFT"):
+        name = name[:-5]
+    elif name.endswith(" RIGHT"):
+        name = name[:-6]
+
+    return name.strip()
+
+
+def build_action_classes(classes_dict):
+    action_classes = []
+
+    for name in classes_dict.keys():
+        clean = clean_class_name(name)
+
+        if clean not in action_classes:
+            action_classes.append(clean)
+
+    return action_classes
+
+
 def load_annotations(json_path, class_to_idx):
-    """
-    Load your Labels-scorevision.json file.
-
-    Expected format:
-    {
-      "annotations": [
-        {
-          "gameTime": "1 - 00:01",
-          "label": "pass",
-          "position": "1160",
-          "team": "left",
-          "visibility": "visible"
-        }
-      ]
-    }
-    """
-
     with open(json_path, "r") as f:
         data = json.load(f)
 
@@ -117,22 +119,22 @@ def load_annotations(json_path, class_to_idx):
 
     for ann in data["annotations"]:
         raw_label = ann["label"].strip()
-        raw_label_key = raw_label.lower().replace(" ", "_")
+        key = raw_label.lower().replace(" ", "_")
 
-        if raw_label_key not in LABEL_MAP:
+        if key not in LABEL_MAP:
             print(f"Skipping unknown label: {raw_label}")
             continue
 
-        mapped_label = LABEL_MAP[raw_label_key].upper().strip()
+        mapped = LABEL_MAP[key].upper().strip()
 
-        if mapped_label not in class_to_idx:
-            print(f"Skipping label not in class file: {mapped_label}")
+        if mapped not in class_to_idx:
+            print(f"Skipping label not in class file: {mapped}")
             continue
 
         position_ms = int(float(ann["position"]))
 
-        # Convert milliseconds -> frame index in the strided timeline.
-        # Raw video is 25 FPS. STRIDE=2 means model timeline is 12.5 FPS.
+        # Convert milliseconds to frame in strided model timeline.
+        # Raw video: 25 FPS. STRIDE=2 gives 12.5 FPS model timeline.
         frame = round(position_ms / 1000.0 * FPS / STRIDE)
 
         team = ann.get("team", "left").lower().strip()
@@ -140,18 +142,16 @@ def load_annotations(json_path, class_to_idx):
 
         annotations.append({
             "frame": frame,
-            "class_idx": class_to_idx[mapped_label],
+            "class_idx": class_to_idx[mapped],
             "team": team_value,
-            "label": mapped_label,
+            "label": mapped,
             "position_ms": position_ms,
         })
 
     print(f"Loaded usable annotations: {len(annotations)}")
 
     if len(annotations) == 0:
-        raise RuntimeError(
-            "No usable annotations loaded. Check LABEL_MAP and data/soccernetball/class.txt."
-        )
+        raise RuntimeError("No usable annotations loaded.")
 
     return annotations
 
@@ -171,6 +171,7 @@ class SingleVideoTrainDataset(Dataset):
         self.frames_dir = Path(frames_dir)
         self.num_raw_frames = num_frames
         self.num_frames = math.ceil(num_frames / stride)
+
         self.annotations = annotations
         self.num_classes = num_classes
         self.clip_len = clip_len
@@ -185,13 +186,16 @@ class SingleVideoTrainDataset(Dataset):
 
     def _read_frame(self, raw_frame_idx):
         raw_frame_idx = max(0, min(raw_frame_idx, self.num_raw_frames - 1))
+
         path = self.frames_dir / f"frame{raw_frame_idx}.jpg"
 
         if not path.exists():
-            # Fallback to nearest earlier frame
             path = self.frames_dir / f"frame{max(0, raw_frame_idx - 1)}.jpg"
 
-        img = read_image(str(path)).float() / 255.0
+        # IMPORTANT:
+        # Do NOT divide by 255 here.
+        # The repo model does x / 255 internally.
+        img = read_image(str(path)).float()
         return img
 
     def __getitem__(self, idx):
@@ -211,20 +215,19 @@ class SingleVideoTrainDataset(Dataset):
             raw_idx = t * self.stride
             frames.append(self._read_frame(raw_idx))
 
-        # Shape: T,C,H,W
+        # T,C,H,W
         frames = torch.stack(frames, dim=0)
 
-        # Labels shape: T, num_classes + background
-        labels = torch.zeros((self.clip_len, self.num_classes + 1), dtype=torch.float32)
+        # CrossEntropy target:
+        # 0 = background
+        # 1..12 = action classes
+        labels = torch.zeros((self.clip_len,), dtype=torch.long)
 
         # Team target:
         # -1 = ignore
         # 0 = left
         # 1 = right
         team_targets = torch.full((self.clip_len,), -1.0, dtype=torch.float32)
-
-        # Background class index 0 by convention
-        labels[:, 0] = 1.0
 
         for ann in self.annotations:
             rel = ann["frame"] - start
@@ -235,8 +238,7 @@ class SingleVideoTrainDataset(Dataset):
                 lo = max(0, rel - self.radius)
                 hi = min(self.clip_len, rel + self.radius + 1)
 
-                labels[lo:hi, 0] = 0.0
-                labels[lo:hi, class_index] = 1.0
+                labels[lo:hi] = class_index
                 team_targets[lo:hi] = ann["team"]
 
         return {
@@ -247,10 +249,6 @@ class SingleVideoTrainDataset(Dataset):
 
 
 def build_model(checkpoint_path, device):
-    """
-    Build T-DEED model using same baseline config style as SoccerNetBall baseline.
-    """
-
     args = SimpleNamespace(
         modality="rgb",
         temporal_arch="ed_sgp_mixer",
@@ -271,7 +269,9 @@ def build_model(checkpoint_path, device):
 
     model = TDEEDModel(device=device, args=args)
 
-    # Same head setup used by the baseline checkpoint.
+    # The official baseline uses double head when joint_train exists.
+    # First head: SoccerNetBall, 12 actions + background = 13.
+    # Second head: SoccerNet Action Spotting, 17 actions + background = 18.
     n_classes = [len(classes) // 2 + 1, len(joint_classes) // 2 + 1]
     model._model.update_pred_head(n_classes)
     model._num_classes = np.array(n_classes).sum()
@@ -286,87 +286,37 @@ def build_model(checkpoint_path, device):
     return model, classes
 
 
-def get_trainable_module(model):
+def forward_model(model_wrapper, frames):
     """
-    TDEEDModel is a wrapper.
-    Actual torch.nn.Module is usually model._model.
-    """
+    The repo model returns:
+      pred_dict, y = model_wrapper._model(frames)
 
-    if hasattr(model, "_model"):
-        return model._model
+    pred_dict contains:
+      displ_feat: B,T
+      team_feat:  B,T
+      im_feat:    B,T,C
 
-    return model
-
-
-def unwrap_prediction(output):
-    """
-    Convert repo model output into prediction tensor.
-
-    Handles:
-    - tensor
-    - tuple/list
-    - dict
-    - nested dict
+    We must train on im_feat, not displ_feat.
+    Your previous crash happened because displ_feat was selected.
     """
 
-    if torch.is_tensor(output):
-        return output
+    pred_dict, _ = model_wrapper._model(frames, inference=False)
 
-    if isinstance(output, (tuple, list)):
-        for item in output:
-            try:
-                return unwrap_prediction(item)
-            except Exception:
-                pass
+    if not hasattr(forward_model, "_printed_keys"):
+        print("Model output keys:", list(pred_dict.keys()))
+        forward_model._printed_keys = True
 
-    if isinstance(output, dict):
-        if not hasattr(unwrap_prediction, "_printed_keys"):
-            print("Model output keys:", list(output.keys()))
-            unwrap_prediction._printed_keys = True
+    if "im_feat" not in pred_dict:
+        raise RuntimeError(f"Missing im_feat in model output. Keys: {list(pred_dict.keys())}")
 
-        preferred_keys = [
-            "pred",
-            "preds",
-            "prediction",
-            "predictions",
-            "logits",
-            "spotting",
-            "spotting_logits",
-            "output",
-            "outputs",
-            "out",
-        ]
+    pred_cls = pred_dict["im_feat"]
 
-        for key in preferred_keys:
-            if key in output:
-                try:
-                    return unwrap_prediction(output[key])
-                except Exception:
-                    pass
+    if pred_cls.ndim != 3:
+        raise RuntimeError(f"Expected im_feat shape B,T,C. Got: {tuple(pred_cls.shape)}")
 
-        # Fallback: recursively inspect all values
-        for _, value in output.items():
-            try:
-                return unwrap_prediction(value)
-            except Exception:
-                continue
+    pred_team = pred_dict.get("team_feat", None)
 
-    raise RuntimeError(f"Could not unwrap prediction from output type: {type(output)}")
-
-
-def normalize_prediction_shape(pred, clip_len):
-    """
-    Convert model prediction into shape B,T,C.
-    """
-
-    if pred.ndim != 3:
-        raise RuntimeError(f"Expected 3D prediction tensor, got shape: {tuple(pred.shape)}")
-
-    # If shape is B,C,T, convert to B,T,C
-    if pred.shape[1] != clip_len and pred.shape[2] == clip_len:
-        pred = pred.permute(0, 2, 1)
-
-    return pred
+    return pred_cls, pred_team
 
 
 def fine_tune(args):
@@ -376,34 +326,10 @@ def fine_tune(args):
     frames_dir = Path(args.work_dir) / "frames"
     num_frames = extract_frames(args.video, frames_dir)
 
-    model_wrapper, classes = build_model(args.checkpoint, device)
-    model = get_trainable_module(model_wrapper)
-    model.train()
+    model_wrapper, classes_dict = build_model(args.checkpoint, device)
+    model_wrapper._model.train()
 
-    # load_classes(..., event_team=True) returns dict in this repo:
-    # example: {"PASS-left": 0, "PASS-right": 1, ...}
-    # Convert it into action-only class names:
-    # PASS, DRIVE, HEADER, etc.
-    action_class_names = []
-
-    for name in classes.keys():
-        clean = name
-
-        if clean.endswith("-left"):
-            clean = clean[:-5]
-        elif clean.endswith("-right"):
-            clean = clean[:-6]
-        elif clean.endswith(" left"):
-            clean = clean[:-5]
-        elif clean.endswith(" right"):
-            clean = clean[:-6]
-
-        clean = clean.upper().strip()
-
-        if clean not in action_class_names:
-            action_class_names.append(clean)
-
-    action_classes = action_class_names
+    action_classes = build_action_classes(classes_dict)
     class_to_idx = {c: i for i, c in enumerate(action_classes)}
 
     print("Classes:")
@@ -432,14 +358,20 @@ def fine_tune(args):
     )
 
     optimizer = torch.optim.AdamW(
-        model.parameters(),
+        model_wrapper._model.parameters(),
         lr=args.lr,
         weight_decay=args.weight_decay,
     )
 
     os.makedirs(args.output_dir, exist_ok=True)
 
+    num_action_channels = len(action_classes) + 1
+
+    print(f"Training channels: {num_action_channels} = background + {len(action_classes)} actions")
+
     for epoch in range(args.epochs):
+        model_wrapper._model.train()
+
         total_loss = 0.0
         total_cls_loss = 0.0
         total_team_loss = 0.0
@@ -447,50 +379,42 @@ def fine_tune(args):
         pbar = tqdm(loader, desc=f"Epoch {epoch + 1}/{args.epochs}")
 
         for batch in pbar:
-            frames = batch["frame"].to(device, non_blocking=True)
-            labels = batch["label"].to(device, non_blocking=True)
-            team_targets = batch["team"].to(device, non_blocking=True)
+            frames = batch["frame"].to(device, non_blocking=True).float()
+            labels = batch["label"].to(device, non_blocking=True).long()
+            team_targets = batch["team"].to(device, non_blocking=True).float()
 
             optimizer.zero_grad(set_to_none=True)
 
-            output = model(frames)
-            pred = unwrap_prediction(output)
-            pred = normalize_prediction_shape(pred, CLIP_LEN)
+            pred_cls, pred_team = forward_model(model_wrapper, frames)
 
-            # Classification logits
-            # labels has background + 12 action classes = 13 channels.
-            needed_channels = labels.shape[-1]
+            # pred_cls is B,T,31 because checkpoint has two heads:
+            # first 13 channels are SoccerNetBall.
+            pred_ball = pred_cls[:, :, :num_action_channels]
 
-            if pred.shape[-1] < needed_channels:
-                raise RuntimeError(
-                    f"Prediction has only {pred.shape[-1]} channels, "
-                    f"but labels need {needed_channels} channels."
-                )
-
-            pred_classes = pred[..., :needed_channels]
-
-            cls_loss = F.binary_cross_entropy_with_logits(
-                pred_classes,
-                labels,
+            cls_loss = F.cross_entropy(
+                pred_ball.reshape(-1, num_action_channels),
+                labels.reshape(-1),
+                weight=torch.tensor(
+                    [1.0] + [args.fg_weight] * (num_action_channels - 1),
+                    device=device,
+                ),
             )
 
             team_loss = torch.tensor(0.0, device=device)
 
-            # Optional team logit if model exposes extra channel after class logits.
-            if pred.shape[-1] > needed_channels:
-                team_logits = pred[..., needed_channels]
-                mask = team_targets >= 0
+            if pred_team is not None:
+                mask = team_targets != -1
 
                 if mask.any():
                     team_loss = F.binary_cross_entropy_with_logits(
-                        team_logits[mask],
+                        pred_team[mask],
                         team_targets[mask],
                     )
 
             loss = cls_loss + args.team_loss_weight * team_loss
 
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+            torch.nn.utils.clip_grad_norm_(model_wrapper._model.parameters(), args.grad_clip)
             optimizer.step()
 
             total_loss += loss.item()
@@ -514,12 +438,12 @@ def fine_tune(args):
             f"team={avg_team:.4f}"
         )
 
-        save_path = Path(args.output_dir) / f"finetuned_epoch_{epoch + 1}.pt"
-        torch.save(model.state_dict(), save_path)
-        print("Saved:", save_path)
+        epoch_path = Path(args.output_dir) / f"finetuned_epoch_{epoch + 1}.pt"
+        torch.save(model_wrapper.state_dict(), epoch_path)
+        print("Saved:", epoch_path)
 
     final_path = Path(args.output_dir) / "finetuned_best.pt"
-    torch.save(model.state_dict(), final_path)
+    torch.save(model_wrapper.state_dict(), final_path)
     print("Final saved:", final_path)
 
 
@@ -540,8 +464,10 @@ def main():
 
     parser.add_argument("--lr", type=float, default=1e-5)
     parser.add_argument("--weight_decay", type=float, default=1e-4)
+
     parser.add_argument("--radius", type=int, default=4)
-    parser.add_argument("--team_loss_weight", type=float, default=0.5)
+    parser.add_argument("--fg_weight", type=float, default=5.0)
+    parser.add_argument("--team_loss_weight", type=float, default=2.0)
     parser.add_argument("--grad_clip", type=float, default=1.0)
 
     args = parser.parse_args()
