@@ -25,17 +25,23 @@ CLIP_LEN = 100
 
 
 LABEL_MAP = {
+    # Your JSON labels -> repo class names
     "pass": "PASS",
     "take_on": "DRIVE",
     "drive": "DRIVE",
+
+    # In your JSON, clearance/ball_out_of_play are mapped to OUT class
     "clearance": "OUT",
     "ball_out_of_play": "OUT",
     "out": "OUT",
+
     "aerial_duel": "HEADER",
     "header": "HEADER",
+
     "block": "BALL PLAYER BLOCK",
     "shot": "SHOT",
     "tackle": "PLAYER SUCCESSFUL TACKLE",
+
     "cross": "CROSS",
     "throw_in": "THROW IN",
     "throw-in": "THROW IN",
@@ -53,7 +59,17 @@ def run(cmd):
 
 
 def extract_frames(video_path, frames_dir):
+    """
+    Extract video frames only once.
+    If frames already exist, reuse them.
+    """
+
     frames_dir = Path(frames_dir)
+    existing = list(frames_dir.glob("frame*.jpg"))
+
+    if len(existing) > 100:
+        print(f"Using existing extracted frames: {len(existing)}")
+        return len(existing)
 
     if frames_dir.exists():
         shutil.rmtree(frames_dir)
@@ -72,10 +88,28 @@ def extract_frames(video_path, frames_dir):
 
     num_frames = len(list(frames_dir.glob("frame*.jpg")))
     print(f"Extracted frames: {num_frames}")
+
     return num_frames
 
 
 def load_annotations(json_path, class_to_idx):
+    """
+    Load your Labels-scorevision.json file.
+
+    Expected format:
+    {
+      "annotations": [
+        {
+          "gameTime": "1 - 00:01",
+          "label": "pass",
+          "position": "1160",
+          "team": "left",
+          "visibility": "visible"
+        }
+      ]
+    }
+    """
+
     with open(json_path, "r") as f:
         data = json.load(f)
 
@@ -89,16 +123,19 @@ def load_annotations(json_path, class_to_idx):
             print(f"Skipping unknown label: {raw_label}")
             continue
 
-        mapped_label = LABEL_MAP[raw_label_key]
+        mapped_label = LABEL_MAP[raw_label_key].upper().strip()
 
         if mapped_label not in class_to_idx:
             print(f"Skipping label not in class file: {mapped_label}")
             continue
 
         position_ms = int(float(ann["position"]))
+
+        # Convert milliseconds -> frame index in the strided timeline.
+        # Raw video is 25 FPS. STRIDE=2 means model timeline is 12.5 FPS.
         frame = round(position_ms / 1000.0 * FPS / STRIDE)
 
-        team = ann.get("team", "left").lower()
+        team = ann.get("team", "left").lower().strip()
         team_value = 0.0 if team == "left" else 1.0
 
         annotations.append({
@@ -110,6 +147,12 @@ def load_annotations(json_path, class_to_idx):
         })
 
     print(f"Loaded usable annotations: {len(annotations)}")
+
+    if len(annotations) == 0:
+        raise RuntimeError(
+            "No usable annotations loaded. Check LABEL_MAP and data/soccernetball/class.txt."
+        )
+
     return annotations
 
 
@@ -145,7 +188,7 @@ class SingleVideoTrainDataset(Dataset):
         path = self.frames_dir / f"frame{raw_frame_idx}.jpg"
 
         if not path.exists():
-            # Find nearest available frame
+            # Fallback to nearest earlier frame
             path = self.frames_dir / f"frame{max(0, raw_frame_idx - 1)}.jpg"
 
         img = read_image(str(path)).float() / 255.0
@@ -163,17 +206,24 @@ class SingleVideoTrainDataset(Dataset):
         end = start + self.clip_len
 
         frames = []
+
         for t in range(start, end):
             raw_idx = t * self.stride
             frames.append(self._read_frame(raw_idx))
 
+        # Shape: T,C,H,W
         frames = torch.stack(frames, dim=0)
 
-        # Model expects B,T,C,H,W from previous inference script style.
+        # Labels shape: T, num_classes + background
         labels = torch.zeros((self.clip_len, self.num_classes + 1), dtype=torch.float32)
+
+        # Team target:
+        # -1 = ignore
+        # 0 = left
+        # 1 = right
         team_targets = torch.full((self.clip_len,), -1.0, dtype=torch.float32)
 
-        # Background class at index 0 by convention.
+        # Background class index 0 by convention
         labels[:, 0] = 1.0
 
         for ann in self.annotations:
@@ -197,6 +247,10 @@ class SingleVideoTrainDataset(Dataset):
 
 
 def build_model(checkpoint_path, device):
+    """
+    Build T-DEED model using same baseline config style as SoccerNetBall baseline.
+    """
+
     args = SimpleNamespace(
         modality="rgb",
         temporal_arch="ed_sgp_mixer",
@@ -217,7 +271,7 @@ def build_model(checkpoint_path, device):
 
     model = TDEEDModel(device=device, args=args)
 
-    # Same head setup as inference script.
+    # Same head setup used by the baseline checkpoint.
     n_classes = [len(classes) // 2 + 1, len(joint_classes) // 2 + 1]
     model._model.update_pred_head(n_classes)
     model._num_classes = np.array(n_classes).sum()
@@ -233,10 +287,86 @@ def build_model(checkpoint_path, device):
 
 
 def get_trainable_module(model):
-    # TDEEDModel is a wrapper. The actual torch module is usually model._model.
+    """
+    TDEEDModel is a wrapper.
+    Actual torch.nn.Module is usually model._model.
+    """
+
     if hasattr(model, "_model"):
         return model._model
+
     return model
+
+
+def unwrap_prediction(output):
+    """
+    Convert repo model output into prediction tensor.
+
+    Handles:
+    - tensor
+    - tuple/list
+    - dict
+    - nested dict
+    """
+
+    if torch.is_tensor(output):
+        return output
+
+    if isinstance(output, (tuple, list)):
+        for item in output:
+            try:
+                return unwrap_prediction(item)
+            except Exception:
+                pass
+
+    if isinstance(output, dict):
+        if not hasattr(unwrap_prediction, "_printed_keys"):
+            print("Model output keys:", list(output.keys()))
+            unwrap_prediction._printed_keys = True
+
+        preferred_keys = [
+            "pred",
+            "preds",
+            "prediction",
+            "predictions",
+            "logits",
+            "spotting",
+            "spotting_logits",
+            "output",
+            "outputs",
+            "out",
+        ]
+
+        for key in preferred_keys:
+            if key in output:
+                try:
+                    return unwrap_prediction(output[key])
+                except Exception:
+                    pass
+
+        # Fallback: recursively inspect all values
+        for _, value in output.items():
+            try:
+                return unwrap_prediction(value)
+            except Exception:
+                continue
+
+    raise RuntimeError(f"Could not unwrap prediction from output type: {type(output)}")
+
+
+def normalize_prediction_shape(pred, clip_len):
+    """
+    Convert model prediction into shape B,T,C.
+    """
+
+    if pred.ndim != 3:
+        raise RuntimeError(f"Expected 3D prediction tensor, got shape: {tuple(pred.shape)}")
+
+    # If shape is B,C,T, convert to B,T,C
+    if pred.shape[1] != clip_len and pred.shape[2] == clip_len:
+        pred = pred.permute(0, 2, 1)
+
+    return pred
 
 
 def fine_tune(args):
@@ -250,14 +380,15 @@ def fine_tune(args):
     model = get_trainable_module(model_wrapper)
     model.train()
 
-    # load_classes(..., event_team=True) returns a dict in this repo:
-    # example: {"Pass-left": 0, "Pass-right": 1, ...}
-    # We convert it into action-only names: Pass, Drive, Shot, etc.
+    # load_classes(..., event_team=True) returns dict in this repo:
+    # example: {"PASS-left": 0, "PASS-right": 1, ...}
+    # Convert it into action-only class names:
+    # PASS, DRIVE, HEADER, etc.
     action_class_names = []
-    
+
     for name in classes.keys():
         clean = name
-    
+
         if clean.endswith("-left"):
             clean = clean[:-5]
         elif clean.endswith("-right"):
@@ -266,10 +397,12 @@ def fine_tune(args):
             clean = clean[:-5]
         elif clean.endswith(" right"):
             clean = clean[:-6]
-    
+
+        clean = clean.upper().strip()
+
         if clean not in action_class_names:
             action_class_names.append(clean)
-    
+
     action_classes = action_class_names
     class_to_idx = {c: i for i, c in enumerate(action_classes)}
 
@@ -314,48 +447,27 @@ def fine_tune(args):
         pbar = tqdm(loader, desc=f"Epoch {epoch + 1}/{args.epochs}")
 
         for batch in pbar:
-            frames = batch["frame"].to(device)
-            labels = batch["label"].to(device)
-            team_targets = batch["team"].to(device)
+            frames = batch["frame"].to(device, non_blocking=True)
+            labels = batch["label"].to(device, non_blocking=True)
+            team_targets = batch["team"].to(device, non_blocking=True)
 
             optimizer.zero_grad(set_to_none=True)
 
-            # Try raw model forward.
             output = model(frames)
+            pred = unwrap_prediction(output)
+            pred = normalize_prediction_shape(pred, CLIP_LEN)
 
-            # Repo model may return dict, tuple/list, or raw tensor.
-            if isinstance(output, dict):
-                print_once = not hasattr(fine_tune, "_printed_output_keys")
-                if print_once:
-                    print("Model output keys:", output.keys())
-                    fine_tune._printed_output_keys = True
-            
-                # Common possible keys in this repo style
-                if "pred" in output:
-                    pred = output["pred"]
-                elif "logits" in output:
-                    pred = output["logits"]
-                elif "spotting" in output:
-                    pred = output["spotting"]
-                elif "output" in output:
-                    pred = output["output"]
-                else:
-                    # fallback: use first tensor value in dict
-                    tensor_values = [v for v in output.values() if torch.is_tensor(v)]
-                    if not tensor_values:
-                        raise RuntimeError(f"No tensor found in model output dict: {output.keys()}")
-                    pred = tensor_values[0]
-            
-            elif isinstance(output, (tuple, list)):
-                pred = output[0]
-            else:
-                pred = output
-            
-            # Expected pred: B,T,C or B,C,T depending repo version.
-            if pred.ndim == 3 and pred.shape[1] != CLIP_LEN and pred.shape[2] == CLIP_LEN:
-                pred = pred.permute(0, 2, 1)
+            # Classification logits
+            # labels has background + 12 action classes = 13 channels.
+            needed_channels = labels.shape[-1]
 
-            pred_classes = pred[..., :labels.shape[-1]]
+            if pred.shape[-1] < needed_channels:
+                raise RuntimeError(
+                    f"Prediction has only {pred.shape[-1]} channels, "
+                    f"but labels need {needed_channels} channels."
+                )
+
+            pred_classes = pred[..., :needed_channels]
 
             cls_loss = F.binary_cross_entropy_with_logits(
                 pred_classes,
@@ -364,9 +476,9 @@ def fine_tune(args):
 
             team_loss = torch.tensor(0.0, device=device)
 
-            # If model outputs a team logit as last channel, use it.
-            if pred.shape[-1] > labels.shape[-1]:
-                team_logits = pred[..., labels.shape[-1]]
+            # Optional team logit if model exposes extra channel after class logits.
+            if pred.shape[-1] > needed_channels:
+                team_logits = pred[..., needed_channels]
                 mask = team_targets >= 0
 
                 if mask.any():
@@ -378,7 +490,7 @@ def fine_tune(args):
             loss = cls_loss + args.team_loss_weight * team_loss
 
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
             optimizer.step()
 
             total_loss += loss.item()
@@ -392,11 +504,14 @@ def fine_tune(args):
             })
 
         avg_loss = total_loss / len(loader)
+        avg_cls = total_cls_loss / len(loader)
+        avg_team = total_team_loss / len(loader)
+
         print(
             f"Epoch {epoch + 1}: "
             f"loss={avg_loss:.4f}, "
-            f"cls={total_cls_loss / len(loader):.4f}, "
-            f"team={total_team_loss / len(loader):.4f}"
+            f"cls={avg_cls:.4f}, "
+            f"team={avg_team:.4f}"
         )
 
         save_path = Path(args.output_dir) / f"finetuned_epoch_{epoch + 1}.pt"
@@ -427,6 +542,7 @@ def main():
     parser.add_argument("--weight_decay", type=float, default=1e-4)
     parser.add_argument("--radius", type=int, default=4)
     parser.add_argument("--team_loss_weight", type=float, default=0.5)
+    parser.add_argument("--grad_clip", type=float, default=1.0)
 
     args = parser.parse_args()
     fine_tune(args)
