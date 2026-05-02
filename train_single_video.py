@@ -25,26 +25,25 @@ CLIP_LEN = 100
 
 
 LABEL_MAP = {
-    # Your JSON labels -> SoccerNetBall class names
-    "pass": "Pass",
-    "take_on": "Drive",
-    "drive": "Drive",
-    "clearance": "Clearance",
-    "ball_out_of_play": "Ball out of play",
-    "out": "Ball out of play",
-    "aerial_duel": "Header",
-    "header": "Header",
-    "block": "Ball Player Block",
-    "shot": "Shot",
-    "tackle": "Player Successful Tackle",
-    "cross": "Cross",
-    "throw_in": "Throw-in",
-    "throw-in": "Throw-in",
-    "free_kick": "Free Kick",
-    "free-kick": "Free Kick",
-    "goal": "Goal",
-    "high_pass": "High Pass",
-    "high-pass": "High Pass",
+    "pass": "PASS",
+    "take_on": "DRIVE",
+    "drive": "DRIVE",
+    "clearance": "OUT",
+    "ball_out_of_play": "OUT",
+    "out": "OUT",
+    "aerial_duel": "HEADER",
+    "header": "HEADER",
+    "block": "BALL PLAYER BLOCK",
+    "shot": "SHOT",
+    "tackle": "PLAYER SUCCESSFUL TACKLE",
+    "cross": "CROSS",
+    "throw_in": "THROW IN",
+    "throw-in": "THROW IN",
+    "free_kick": "FREE KICK",
+    "free-kick": "FREE KICK",
+    "goal": "GOAL",
+    "high_pass": "HIGH PASS",
+    "high-pass": "HIGH PASS",
 }
 
 
@@ -324,13 +323,35 @@ def fine_tune(args):
             # Try raw model forward.
             output = model(frames)
 
-            # Different repo versions may return tuple/list.
-            if isinstance(output, tuple):
+            # Repo model may return dict, tuple/list, or raw tensor.
+            if isinstance(output, dict):
+                print_once = not hasattr(fine_tune, "_printed_output_keys")
+                if print_once:
+                    print("Model output keys:", output.keys())
+                    fine_tune._printed_output_keys = True
+            
+                # Common possible keys in this repo style
+                if "pred" in output:
+                    pred = output["pred"]
+                elif "logits" in output:
+                    pred = output["logits"]
+                elif "spotting" in output:
+                    pred = output["spotting"]
+                elif "output" in output:
+                    pred = output["output"]
+                else:
+                    # fallback: use first tensor value in dict
+                    tensor_values = [v for v in output.values() if torch.is_tensor(v)]
+                    if not tensor_values:
+                        raise RuntimeError(f"No tensor found in model output dict: {output.keys()}")
+                    pred = tensor_values[0]
+            
+            elif isinstance(output, (tuple, list)):
                 pred = output[0]
             else:
                 pred = output
-
-            # Expected pred: B,T,C or B,C,T depending version.
+            
+            # Expected pred: B,T,C or B,C,T depending repo version.
             if pred.ndim == 3 and pred.shape[1] != CLIP_LEN and pred.shape[2] == CLIP_LEN:
                 pred = pred.permute(0, 2, 1)
 
