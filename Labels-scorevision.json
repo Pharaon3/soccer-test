@@ -1,58 +1,58 @@
 {
   "annotations": [
     {
-      "gameTime": "1 - 00:00",
-      "label": "pass",
-      "position": "760",
-      "team": "right",
-      "visibility": "visible"
-    },
-    {
-      "gameTime": "1 - 00:02",
-      "label": "pass_received",
-      "position": "2680",
-      "team": "left",
-      "visibility": "visible"
-    },
-    {
-      "gameTime": "1 - 00:03",
-      "label": "pass",
-      "position": "3480",
-      "team": "left",
-      "visibility": "visible"
-    },
-    {
-      "gameTime": "1 - 00:05",
+      "gameTime": "3 - 00:00",
       "label": "clearance",
-      "position": "5600",
+      "position": "640",
       "team": "left",
       "visibility": "visible"
     },
     {
-      "gameTime": "1 - 00:09",
-      "label": "pass_received",
-      "position": "9360",
-      "team": "left",
-      "visibility": "visible"
-    },
-    {
-      "gameTime": "1 - 00:11",
-      "label": "pass",
-      "position": "11840",
-      "team": "left",
-      "visibility": "visible"
-    },
-    {
-      "gameTime": "1 - 00:12",
-      "label": "block",
-      "position": "12480",
+      "gameTime": "3 - 00:03",
+      "label": "header",
+      "position": "3560",
       "team": "right",
       "visibility": "visible"
     },
     {
-      "gameTime": "1 - 00:15",
+      "gameTime": "3 - 00:05",
+      "label": "header",
+      "position": "5400",
+      "team": "right",
+      "visibility": "visible"
+    },
+    {
+      "gameTime": "3 - 00:06",
+      "label": "header",
+      "position": "6680",
+      "team": "left",
+      "visibility": "visible"
+    },
+    {
+      "gameTime": "3 - 00:08",
+      "label": "pass_received",
+      "position": "8240",
+      "team": "left",
+      "visibility": "visible"
+    },
+    {
+      "gameTime": "3 - 00:10",
+      "label": "pass_received",
+      "position": "10160",
+      "team": "right",
+      "visibility": "visible"
+    },
+    {
+      "gameTime": "3 - 00:10",
+      "label": "clearance",
+      "position": "10880",
+      "team": "right",
+      "visibility": "visible"
+    },
+    {
+      "gameTime": "3 - 00:18",
       "label": "ball_out_of_play",
-      "position": "15160",
+      "position": "18160",
       "team": "left",
       "visibility": "visible"
     }
