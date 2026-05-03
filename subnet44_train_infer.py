@@ -48,6 +48,82 @@ def run(cmd):
     subprocess.run(cmd, check=True)
 
 
+def parse_raw_annotations(raw_list):
+    anns = []
+    for ann in raw_list:
+        label = ann["label"].strip()
+
+        if label not in CLASS_TO_IDX:
+            print(f"Skipping non-subnet44 label: {label}")
+            continue
+
+        pos_ms = int(float(ann["position"]))
+        raw_frame = round(pos_ms / 1000 * FPS)
+        model_frame = raw_frame // STRIDE
+
+        anns.append({
+            "label": label,
+            "class_idx": CLASS_TO_IDX[label],
+            "model_frame": model_frame,
+            "position": pos_ms,
+            "team": ann.get("team", "unknown"),
+            "visibility": ann.get("visibility", "visible"),
+        })
+
+    print(f"Loaded subnet44 annotations: {len(anns)}")
+
+    if len(anns) == 0:
+        raise RuntimeError("No valid subnet44 annotations found.")
+
+    return anns
+
+
+def load_annotations_from_labels_file(path):
+    with open(path, "r") as f:
+        data = json.load(f)
+
+    if "annotations" not in data:
+        raise ValueError(
+            f"Label file {path} has no top-level 'annotations'; "
+            "use clip-label.json via --clip_label_json instead."
+        )
+
+    return parse_raw_annotations(data["annotations"])
+
+
+def iter_clip_label_training_triples(json_path, videos_root):
+    """
+    Yields (absolute_video_path, raw_annotation_dicts, clip_work_key) for each
+    entry in clip-label.json (sequential training, approach B).
+    """
+    json_path = Path(json_path)
+    videos_root = Path(videos_root)
+
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if "videos" not in data:
+        raise ValueError(f"{json_path} must contain a top-level 'videos' array.")
+
+    for entry in data["videos"]:
+        if entry.get("input_type") != "video":
+            continue
+
+        rel = entry["path"]
+        video_path = videos_root / rel
+
+        if not video_path.is_file():
+            print(f"Skipping missing video: {video_path}")
+            continue
+
+        raw_anns = entry.get("annotations") or []
+        parent = Path(rel).parent
+        clip_key = parent.as_posix() if str(parent) != "." else Path(rel).stem
+        clip_key = clip_key.replace("\\", "/").replace("/", "_")
+
+        yield video_path.resolve(), raw_anns, clip_key
+
+
 def extract_frames(video_path, frames_dir):
     frames_dir = Path(frames_dir)
     existing = list(frames_dir.glob("frame*.jpg"))
@@ -165,40 +241,12 @@ class Subnet44Dataset(Dataset):
         self.radius = radius
 
         self.num_frames = extract_frames(video, self.frames_dir)
-        self.annotations = self.load_labels(labels)
+        self.annotations = self.resolve_labels(labels)
 
-    def load_labels(self, path):
-        with open(path, "r") as f:
-            data = json.load(f)
-
-        anns = []
-
-        for ann in data["annotations"]:
-            label = ann["label"].strip()
-
-            if label not in CLASS_TO_IDX:
-                print(f"Skipping non-subnet44 label: {label}")
-                continue
-
-            pos_ms = int(float(ann["position"]))
-            raw_frame = round(pos_ms / 1000 * FPS)
-            model_frame = raw_frame // STRIDE
-
-            anns.append({
-                "label": label,
-                "class_idx": CLASS_TO_IDX[label],
-                "model_frame": model_frame,
-                "position": pos_ms,
-                "team": ann.get("team", "unknown"),
-                "visibility": ann.get("visibility", "visible"),
-            })
-
-        print(f"Loaded subnet44 annotations: {len(anns)}")
-
-        if len(anns) == 0:
-            raise RuntimeError("No valid subnet44 annotations found.")
-
-        return anns
+    def resolve_labels(self, labels):
+        if isinstance(labels, (list, tuple)):
+            return parse_raw_annotations(labels)
+        return load_annotations_from_labels_file(labels)
 
     def __len__(self):
         return self.samples_per_epoch
@@ -244,25 +292,36 @@ class Subnet44Dataset(Dataset):
         return frames, labels
 
 
+def _checkpoint_dict(model, args):
+    return {
+        "model_state": model.state_dict(),
+        "classes": SUBNET44_CLASSES,
+        "fps": FPS,
+        "stride": STRIDE,
+        "model_frames": MODEL_FRAMES,
+        "d_model": args.d_model,
+        "layers": args.layers,
+        "heads": args.heads,
+    }
+
+
 def train(args):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Device:", device)
 
-    dataset = Subnet44Dataset(
-        video=args.video,
-        labels=args.labels,
-        work_dir=args.work_dir,
-        samples_per_epoch=args.samples_per_epoch,
-        radius=args.radius,
-    )
-
-    loader = DataLoader(
-        dataset,
-        batch_size=args.batch_size,
-        shuffle=True,
-        num_workers=args.num_workers,
-        pin_memory=True,
-    )
+    if args.clip_label_json:
+        clip_triples = list(iter_clip_label_training_triples(
+            args.clip_label_json,
+            args.videos_dir,
+        ))
+        if not clip_triples:
+            raise RuntimeError(
+                "No trainable clips found (--clip_label_json / --videos_dir)."
+            )
+    else:
+        clip_triples = [
+            (Path(args.video).resolve(), args.labels, "single"),
+        ]
 
     model = Subnet44BigModel(
         num_classes=len(SUBNET44_CLASSES),
@@ -275,7 +334,7 @@ def train(args):
         ckpt = torch.load(args.resume, map_location=device)
         model.load_state_dict(ckpt["model_state"])
         print("Resumed from:", args.resume)
-        
+
     print(f"Model parameters: {count_params(model):,}")
     print(f"Model size in B params: {count_params(model) / 1e9:.4f}B")
 
@@ -289,59 +348,84 @@ def train(args):
 
     pos_weight = torch.ones(len(SUBNET44_CLASSES), device=device) * args.pos_weight
 
-    for epoch in range(args.epochs):
-        model.train()
-        total = 0.0
+    out_dir = Path(args.output_dir)
+    global_epoch = 0
 
-        pbar = tqdm(loader, desc=f"Epoch {epoch + 1}/{args.epochs}")
+    for clip_idx, (video_path, raw_anns, clip_key) in enumerate(clip_triples):
+        print(
+            f"\n=== Clip {clip_idx + 1}/{len(clip_triples)}: {clip_key} "
+            f"({video_path}) ===\n"
+        )
 
-        for frames, labels in pbar:
-            frames = frames.to(device, non_blocking=True)
-            labels = labels.to(device, non_blocking=True)
+        clip_work = Path(args.work_dir) / clip_key
+        dataset = Subnet44Dataset(
+            video=str(video_path),
+            labels=raw_anns,
+            work_dir=clip_work,
+            samples_per_epoch=args.samples_per_epoch,
+            radius=args.radius,
+        )
 
-            optimizer.zero_grad(set_to_none=True)
+        loader = DataLoader(
+            dataset,
+            batch_size=args.batch_size,
+            shuffle=True,
+            num_workers=args.num_workers,
+            pin_memory=True,
+        )
 
-            logits = model(frames)
+        for epoch in range(args.epochs):
+            global_epoch += 1
+            model.train()
+            total = 0.0
 
-            loss = F.binary_cross_entropy_with_logits(
-                logits,
-                labels,
-                pos_weight=pos_weight,
+            pbar = tqdm(
+                loader,
+                desc=f"{clip_key} epoch {epoch + 1}/{args.epochs}",
             )
 
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
-            optimizer.step()
+            for frames, labels in pbar:
+                frames = frames.to(device, non_blocking=True)
+                labels = labels.to(device, non_blocking=True)
 
-            total += loss.item()
-            pbar.set_postfix({"loss": f"{loss.item():.4f}"})
+                optimizer.zero_grad(set_to_none=True)
 
-        print(f"Epoch {epoch + 1}: loss={total / len(loader):.4f}")
+                logits = model(frames)
 
-        torch.save({
-            "model_state": model.state_dict(),
-            "classes": SUBNET44_CLASSES,
-            "fps": FPS,
-            "stride": STRIDE,
-            "model_frames": MODEL_FRAMES,
-            "d_model": args.d_model,
-            "layers": args.layers,
-            "heads": args.heads,
-        }, Path(args.output_dir) / f"epoch_{epoch + 1}.pt")
+                loss = F.binary_cross_entropy_with_logits(
+                    logits,
+                    labels,
+                    pos_weight=pos_weight,
+                )
 
-    final = Path(args.output_dir) / "subnet44_big_from_zero.pt"
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
+                optimizer.step()
 
-    torch.save({
-        "model_state": model.state_dict(),
-        "classes": SUBNET44_CLASSES,
-        "fps": FPS,
-        "stride": STRIDE,
-        "model_frames": MODEL_FRAMES,
-        "d_model": args.d_model,
-        "layers": args.layers,
-        "heads": args.heads,
-    }, final)
+                total += loss.item()
+                pbar.set_postfix({"loss": f"{loss.item():.4f}"})
 
+            print(
+                f"{clip_key} epoch {epoch + 1}: "
+                f"loss={total / len(loader):.4f}"
+            )
+
+            torch.save(
+                _checkpoint_dict(model, args),
+                out_dir / f"{clip_key}_epoch_{epoch + 1}.pt",
+            )
+            torch.save(
+                _checkpoint_dict(model, args),
+                out_dir / f"global_epoch_{global_epoch}.pt",
+            )
+
+        torch.save(
+            _checkpoint_dict(model, args),
+            out_dir / f"{clip_key}_final.pt",
+        )
+
+    final = out_dir / "subnet44_big_from_zero.pt"
+    torch.save(_checkpoint_dict(model, args), final)
     print("Saved:", final)
 
 
@@ -468,8 +552,18 @@ def main():
     sub = parser.add_subparsers(dest="mode", required=True)
 
     p_train = sub.add_parser("train")
-    p_train.add_argument("--video", required=True)
-    p_train.add_argument("--labels", required=True)
+    p_train.add_argument("--video", default=None)
+    p_train.add_argument("--labels", default=None)
+    p_train.add_argument(
+        "--clip_label_json",
+        default=None,
+        help="clip-label.json: train each video clip sequentially (same model).",
+    )
+    p_train.add_argument(
+        "--videos_dir",
+        default="videos",
+        help="Root folder for paths in clip-label.json (default: videos).",
+    )
     p_train.add_argument("--work_dir", default="subnet44_work")
     p_train.add_argument("--output_dir", default="subnet44_checkpoints")
 
@@ -504,6 +598,16 @@ def main():
     args = parser.parse_args()
 
     if args.mode == "train":
+        if args.clip_label_json:
+            if args.video is not None or args.labels is not None:
+                parser.error(
+                    "With --clip_label_json, omit --video and --labels."
+                )
+        else:
+            if not args.video or not args.labels:
+                parser.error(
+                    "Provide --clip_label_json or both --video and --labels."
+                )
         train(args)
     else:
         infer(args)
