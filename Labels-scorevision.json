@@ -1,52 +1,61 @@
 {
   "annotations": [
     {
-      "label": "PASS",
+      "gameTime": "1 - 00:00",
+      "label": "pass",
       "position": "760",
-      "team": "away",
+      "team": "right",
       "visibility": "visible"
     },
     {
-      "label": "DRIVE",
+      "gameTime": "1 - 00:02",
+      "label": "pass_received",
       "position": "2680",
-      "team": "home",
+      "team": "left",
       "visibility": "visible"
     },
     {
-      "label": "PASS",
+      "gameTime": "1 - 00:03",
+      "label": "pass",
       "position": "3480",
-      "team": "home",
+      "team": "left",
       "visibility": "visible"
     },
     {
-      "label": "HIGH PASS",
+      "gameTime": "1 - 00:05",
+      "label": "clearance",
       "position": "5600",
-      "team": "home",
+      "team": "left",
       "visibility": "visible"
     },
     {
-      "label": "DRIVE",
+      "gameTime": "1 - 00:09",
+      "label": "pass_received",
       "position": "9360",
-      "team": "home",
+      "team": "left",
       "visibility": "visible"
     },
     {
-      "label": "PASS",
+      "gameTime": "1 - 00:11",
+      "label": "pass",
       "position": "11840",
-      "team": "home",
+      "team": "left",
       "visibility": "visible"
     },
     {
-      "label": "BALL PLAYER BLOCK",
+      "gameTime": "1 - 00:12",
+      "label": "block",
       "position": "12480",
-      "team": "away",
+      "team": "right",
       "visibility": "visible"
     },
     {
-      "label": "OUT",
+      "gameTime": "1 - 00:15",
+      "label": "ball_out_of_play",
       "position": "15160",
-      "team": "home",
+      "team": "left",
       "visibility": "visible"
     }
+  ]
   ]
 }
