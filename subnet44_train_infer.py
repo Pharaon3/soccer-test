@@ -271,6 +271,11 @@ def train(args):
         heads=args.heads,
     ).to(device)
 
+    if args.resume:
+        ckpt = torch.load(args.resume, map_location=device)
+        model.load_state_dict(ckpt["model_state"])
+        print("Resumed from:", args.resume)
+        
     print(f"Model parameters: {count_params(model):,}")
     print(f"Model size in B params: {count_params(model) / 1e9:.4f}B")
 
@@ -493,6 +498,8 @@ def main():
     # This controls how many peak events to export.
     p_infer.add_argument("--max_events_per_30s", type=int, default=25)
     p_infer.add_argument("--min_gap_ms", type=int, default=400)
+
+    p_train.add_argument("--resume", default=None)
 
     args = parser.parse_args()
 
