@@ -1,0 +1,1216 @@
+{
+  "version": "1.0",
+  "date": "2025.06.06",
+  "videos": [
+    {
+      "path": "clip_4/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "pass",
+          "frame": 68
+        },
+        {
+          "label": "aerial_duel",
+          "frame": 120
+        },
+        {
+          "label": "aerial_duel",
+          "frame": 216
+        },
+        {
+          "label": "pass_received",
+          "frame": 243
+        },
+        {
+          "label": "pass",
+          "frame": 266
+        },
+        {
+          "label": "pass_received",
+          "frame": 332
+        },
+        {
+          "label": "shot",
+          "frame": 396
+        },
+        {
+          "label": "block",
+          "frame": 413
+        },
+        {
+          "label": "recovery",
+          "frame": 493
+        },
+        {
+          "label": "pass",
+          "frame": 557
+        },
+        {
+          "label": "pass_received",
+          "frame": 588
+        },
+        {
+          "label": "pass",
+          "frame": 615
+        },
+        {
+          "label": "pass",
+          "frame": 633
+        },
+        {
+          "label": "pass_received",
+          "frame": 679
+        },
+        {
+          "label": "pass",
+          "frame": 702
+        },
+        {
+          "label": "pass_received",
+          "frame": 718
+        },
+        {
+          "label": "tackle",
+          "frame": 719
+        }
+      ]
+    },
+    {
+      "path": "clip_6/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "shot",
+          "frame": 15
+        },
+        {
+          "label": "block",
+          "frame": 36
+        },
+        {
+          "label": "ball_out_of_play",
+          "frame": 136
+        },
+        {
+          "label": "pass",
+          "frame": 340
+        },
+        {
+          "label": "pass",
+          "frame": 383
+        },
+        {
+          "label": "pass",
+          "frame": 412
+        },
+        {
+          "label": "block",
+          "frame": 440
+        },
+        {
+          "label": "pass",
+          "frame": 537
+        },
+        {
+          "label": "pass_received",
+          "frame": 604
+        },
+        {
+          "label": "pass",
+          "frame": 668
+        },
+        {
+          "label": "pass_received",
+          "frame": 699
+        }
+      ]
+    },
+    {
+      "path": "clip_10/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "aerial_duel",
+          "frame": 13
+        },
+        {
+          "label": "recovery",
+          "frame": 52
+        },
+        {
+          "label": "tackle",
+          "frame": 78
+        },
+        {
+          "label": "recovery",
+          "frame": 152
+        },
+        {
+          "label": "pass",
+          "frame": 259
+        },
+        {
+          "label": "block",
+          "frame": 267
+        },
+        {
+          "label": "pass",
+          "frame": 319
+        },
+        {
+          "label": "pass_received",
+          "frame": 371
+        },
+        {
+          "label": "pass",
+          "frame": 394
+        },
+        {
+          "label": "pass_received",
+          "frame": 428
+        },
+        {
+          "label": "pass",
+          "frame": 447
+        },
+        {
+          "label": "pass_received",
+          "frame": 485
+        },
+        {
+          "label": "pass",
+          "frame": 538
+        },
+        {
+          "label": "shot",
+          "frame": 587
+        },
+        {
+          "label": "block",
+          "frame": 616
+        },
+        {
+          "label": "pass",
+          "frame": 651
+        },
+        {
+          "label": "pass_received",
+          "frame": 721
+        }
+      ]
+    },
+    {
+      "path": "clip_12/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "pass_received",
+          "frame": 34
+        },
+        {
+          "label": "pass",
+          "frame": 60
+        },
+        {
+          "label": "pass_received",
+          "frame": 98
+        },
+        {
+          "label": "pass",
+          "frame": 152
+        },
+        {
+          "label": "pass_received",
+          "frame": 175
+        },
+        {
+          "label": "pass",
+          "frame": 202
+        },
+        {
+          "label": "pass_received",
+          "frame": 221
+        },
+        {
+          "label": "pass",
+          "frame": 252
+        },
+        {
+          "label": "pass_received",
+          "frame": 300
+        },
+        {
+          "label": "pass",
+          "frame": 345
+        },
+        {
+          "label": "pass_received",
+          "frame": 389
+        },
+        {
+          "label": "pass",
+          "frame": 429
+        },
+        {
+          "label": "pass_received",
+          "frame": 450
+        },
+        {
+          "label": "pass",
+          "frame": 576
+        },
+        {
+          "label": "pass_received",
+          "frame": 602
+        },
+        {
+          "label": "pass",
+          "frame": 632
+        },
+        {
+          "label": "pass_received",
+          "frame": 679
+        },
+        {
+          "label": "shot",
+          "frame": 702
+        },
+        {
+          "label": "block",
+          "frame": 708
+        },
+        {
+          "label": "recovery",
+          "frame": 738
+        }
+      ]
+    },
+    {
+      "path": "clip_13/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "pass_received",
+          "frame": 14
+        },
+        {
+          "label": "pass",
+          "frame": 62
+        },
+        {
+          "label": "pass_received",
+          "frame": 103
+        },
+        {
+          "label": "pass",
+          "frame": 160
+        },
+        {
+          "label": "pass_received",
+          "frame": 206
+        },
+        {
+          "label": "pass",
+          "frame": 248
+        },
+        {
+          "label": "pass_received",
+          "frame": 269
+        },
+        {
+          "label": "shot",
+          "frame": 336
+        },
+        {
+          "label": "block",
+          "frame": 350
+        },
+        {
+          "label": "aerial_duel",
+          "frame": 400
+        },
+        {
+          "label": "pass_received",
+          "frame": 431
+        },
+        {
+          "label": "interception",
+          "frame": 457
+        },
+        {
+          "label": "recovery",
+          "frame": 493
+        },
+        {
+          "label": "pass",
+          "frame": 542
+        },
+        {
+          "label": "pass_received",
+          "frame": 597
+        },
+        {
+          "label": "pass",
+          "frame": 643
+        },
+        {
+          "label": "pass_received",
+          "frame": 676
+        },
+        {
+          "label": "pass",
+          "frame": 697
+        },
+        {
+          "label": "pass_received",
+          "frame": 721
+        },
+        {
+          "label": "pass",
+          "frame": 741
+        }
+      ]
+    },
+    {
+      "path": "clip_20/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "pass_received",
+          "frame": 29
+        },
+        {
+          "label": "pass",
+          "frame": 40
+        },
+        {
+          "label": "pass",
+          "frame": 65
+        },
+        {
+          "label": "pass",
+          "frame": 111
+        },
+        {
+          "label": "pass_received",
+          "frame": 141
+        },
+        {
+          "label": "pass",
+          "frame": 184
+        },
+        {
+          "label": "pass",
+          "frame": 249
+        },
+        {
+          "label": "aerial_duel",
+          "frame": 356
+        },
+        {
+          "label": "aerial_duel",
+          "frame": 436
+        },
+        {
+          "label": "aerial_duel",
+          "frame": 436
+        },
+        {
+          "label": "recovery",
+          "frame": 472
+        },
+        {
+          "label": "pass",
+          "frame": 484
+        },
+        {
+          "label": "pass_received",
+          "frame": 520
+        },
+        {
+          "label": "recovery",
+          "frame": 635
+        },
+        {
+          "label": "pass_received",
+          "frame": 674
+        },
+        {
+          "label": "recovery",
+          "frame": 685
+        },
+        {
+          "label": "pass",
+          "frame": 735
+        }
+      ]
+    },
+    {
+      "path": "clip_28/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "pass_received",
+          "frame": 14
+        },
+        {
+          "label": "pass",
+          "frame": 54
+        },
+        {
+          "label": "pass_received",
+          "frame": 75
+        },
+        {
+          "label": "pass",
+          "frame": 201
+        },
+        {
+          "label": "pass_received",
+          "frame": 227
+        },
+        {
+          "label": "pass",
+          "frame": 257
+        },
+        {
+          "label": "pass_received",
+          "frame": 304
+        },
+        {
+          "label": "shot",
+          "frame": 327
+        },
+        {
+          "label": "block",
+          "frame": 333
+        },
+        {
+          "label": "pass_received",
+          "frame": 363
+        },
+        {
+          "label": "pass",
+          "frame": 389
+        },
+        {
+          "label": "pass_received",
+          "frame": 440
+        },
+        {
+          "label": "pass",
+          "frame": 494
+        },
+        {
+          "label": "pass_received",
+          "frame": 517
+        },
+        {
+          "label": "pass",
+          "frame": 576
+        },
+        {
+          "label": "recovery",
+          "frame": 635
+        },
+        {
+          "label": "pass",
+          "frame": 702
+        },
+        {
+          "label": "pass_received",
+          "frame": 741
+        },
+        {
+          "label": "pass",
+          "frame": 741
+        }
+      ]
+    },
+    {
+      "path": "clip_29/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "pass_received",
+          "frame": 6
+        },
+        {
+          "label": "shot",
+          "frame": 91
+        },
+        {
+          "label": "block",
+          "frame": 100
+        },
+        {
+          "label": "pass_received",
+          "frame": 152
+        },
+        {
+          "label": "pass",
+          "frame": 181
+        },
+        {
+          "label": "recovery",
+          "frame": 288
+        },
+        {
+          "label": "pass",
+          "frame": 354
+        },
+        {
+          "label": "pass_received",
+          "frame": 394
+        },
+        {
+          "label": "pass",
+          "frame": 417
+        },
+        {
+          "label": "pass_received",
+          "frame": 448
+        },
+        {
+          "label": "pass",
+          "frame": 526
+        },
+        {
+          "label": "pass_received",
+          "frame": 599
+        },
+        {
+          "label": "pass",
+          "frame": 631
+        },
+        {
+          "label": "pass_received",
+          "frame": 694
+        },
+        {
+          "label": "pass",
+          "frame": 738
+        }
+      ]
+    },
+    {
+      "path": "clip_36/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "pass_received",
+          "frame": 22
+        },
+        {
+          "label": "pass",
+          "frame": 22
+        },
+        {
+          "label": "pass_received",
+          "frame": 58
+        },
+        {
+          "label": "pass",
+          "frame": 58
+        },
+        {
+          "label": "aerial_duel",
+          "frame": 124
+        },
+        {
+          "label": "pass",
+          "frame": 124
+        },
+        {
+          "label": "pass_received",
+          "frame": 160
+        },
+        {
+          "label": "tackle",
+          "frame": 164
+        },
+        {
+          "label": "tackle",
+          "frame": 202
+        },
+        {
+          "label": "tackle",
+          "frame": 222
+        },
+        {
+          "label": "pass",
+          "frame": 222
+        },
+        {
+          "label": "pass_received",
+          "frame": 252
+        },
+        {
+          "label": "pass",
+          "frame": 286
+        },
+        {
+          "label": "interception",
+          "frame": 302
+        },
+        {
+          "label": "pass",
+          "frame": 335
+        },
+        {
+          "label": "pass_received",
+          "frame": 366
+        },
+        {
+          "label": "pass",
+          "frame": 391
+        },
+        {
+          "label": "pass_received",
+          "frame": 417
+        },
+        {
+          "label": "pass",
+          "frame": 428
+        },
+        {
+          "label": "pass_received",
+          "frame": 446
+        },
+        {
+          "label": "pass",
+          "frame": 464
+        },
+        {
+          "label": "pass_received",
+          "frame": 535
+        },
+        {
+          "label": "pass",
+          "frame": 583
+        },
+        {
+          "label": "pass_received",
+          "frame": 658
+        },
+        {
+          "label": "pass",
+          "frame": 658
+        }
+      ]
+    },
+    {
+      "path": "clip_37/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "pass_received",
+          "frame": 27
+        },
+        {
+          "label": "pass",
+          "frame": 41
+        },
+        {
+          "label": "pass_received",
+          "frame": 64
+        },
+        {
+          "label": "pass",
+          "frame": 121
+        },
+        {
+          "label": "pass_received",
+          "frame": 159
+        },
+        {
+          "label": "pass",
+          "frame": 185
+        },
+        {
+          "label": "pass_received",
+          "frame": 223
+        },
+        {
+          "label": "pass",
+          "frame": 277
+        },
+        {
+          "label": "pass_received",
+          "frame": 300
+        },
+        {
+          "label": "pass",
+          "frame": 327
+        },
+        {
+          "label": "pass_received",
+          "frame": 346
+        },
+        {
+          "label": "pass",
+          "frame": 377
+        },
+        {
+          "label": "pass_received",
+          "frame": 425
+        },
+        {
+          "label": "pass",
+          "frame": 470
+        },
+        {
+          "label": "pass_received",
+          "frame": 514
+        },
+        {
+          "label": "pass",
+          "frame": 554
+        },
+        {
+          "label": "pass_received",
+          "frame": 575
+        },
+        {
+          "label": "pass",
+          "frame": 701
+        },
+        {
+          "label": "pass_received",
+          "frame": 727
+        }
+      ]
+    },
+    {
+      "path": "clip_41/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "pass",
+          "frame": 33
+        },
+        {
+          "label": "pass_received",
+          "frame": 65
+        },
+        {
+          "label": "pass",
+          "frame": 94
+        },
+        {
+          "label": "pass_received",
+          "frame": 127
+        },
+        {
+          "label": "pass",
+          "frame": 161
+        },
+        {
+          "label": "pass_received",
+          "frame": 228
+        },
+        {
+          "label": "tackle",
+          "frame": 262
+        },
+        {
+          "label": "pass",
+          "frame": 300
+        },
+        {
+          "label": "pass_received",
+          "frame": 335
+        },
+        {
+          "label": "pass",
+          "frame": 400
+        },
+        {
+          "label": "pass_received",
+          "frame": 420
+        },
+        {
+          "label": "pass",
+          "frame": 420
+        },
+        {
+          "label": "pass_received",
+          "frame": 481
+        },
+        {
+          "label": "pass",
+          "frame": 481
+        },
+        {
+          "label": "pass_received",
+          "frame": 520
+        },
+        {
+          "label": "pass",
+          "frame": 520
+        },
+        {
+          "label": "pass_received",
+          "frame": 583
+        },
+        {
+          "label": "pass",
+          "frame": 636
+        },
+        {
+          "label": "pass_received",
+          "frame": 719
+        }
+      ]
+    },
+    {
+      "path": "clip_65/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "pass",
+          "frame": 15
+        },
+        {
+          "label": "pass_received",
+          "frame": 57
+        },
+        {
+          "label": "pass",
+          "frame": 101
+        },
+        {
+          "label": "pass_received",
+          "frame": 128
+        },
+        {
+          "label": "pass",
+          "frame": 155
+        },
+        {
+          "label": "pass_received",
+          "frame": 190
+        },
+        {
+          "label": "pass",
+          "frame": 256
+        },
+        {
+          "label": "pass_received",
+          "frame": 279
+        },
+        {
+          "label": "pass",
+          "frame": 279
+        },
+        {
+          "label": "pass_received",
+          "frame": 319
+        },
+        {
+          "label": "pass",
+          "frame": 319
+        },
+        {
+          "label": "pass_received",
+          "frame": 426
+        },
+        {
+          "label": "pass",
+          "frame": 426
+        },
+        {
+          "label": "pass_received",
+          "frame": 488
+        },
+        {
+          "label": "pass",
+          "frame": 531
+        },
+        {
+          "label": "pass_received",
+          "frame": 596
+        },
+        {
+          "label": "pass",
+          "frame": 621
+        },
+        {
+          "label": "pass_received",
+          "frame": 645
+        },
+        {
+          "label": "pass",
+          "frame": 674
+        },
+        {
+          "label": "pass_received",
+          "frame": 709
+        }
+      ]
+    },
+    {
+      "path": "clip_78/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "pass_received",
+          "frame": 3
+        },
+        {
+          "label": "pass",
+          "frame": 34
+        },
+        {
+          "label": "interception",
+          "frame": 48
+        },
+        {
+          "label": "pass",
+          "frame": 72
+        },
+        {
+          "label": "pass_received",
+          "frame": 86
+        },
+        {
+          "label": "pass",
+          "frame": 267
+        },
+        {
+          "label": "pass_received",
+          "frame": 352
+        },
+        {
+          "label": "pass",
+          "frame": 408
+        },
+        {
+          "label": "pass_received",
+          "frame": 436
+        },
+        {
+          "label": "pass",
+          "frame": 471
+        },
+        {
+          "label": "pass_received",
+          "frame": 511
+        },
+        {
+          "label": "pass",
+          "frame": 529
+        },
+        {
+          "label": "pass_received",
+          "frame": 554
+        },
+        {
+          "label": "pass",
+          "frame": 554
+        },
+        {
+          "label": "pass_received",
+          "frame": 590
+        },
+        {
+          "label": "pass",
+          "frame": 624
+        },
+        {
+          "label": "pass_received",
+          "frame": 648
+        },
+        {
+          "label": "pass",
+          "frame": 672
+        },
+        {
+          "label": "pass_received",
+          "frame": 700
+        },
+        {
+          "label": "pass",
+          "frame": 723
+        }
+      ]
+    },
+    {
+      "path": "clip_81/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "pass",
+          "frame": 14
+        },
+        {
+          "label": "pass_received",
+          "frame": 32
+        },
+        {
+          "label": "pass",
+          "frame": 32
+        },
+        {
+          "label": "pass_received",
+          "frame": 54
+        },
+        {
+          "label": "pass",
+          "frame": 86
+        },
+        {
+          "label": "pass_received",
+          "frame": 135
+        },
+        {
+          "label": "pass",
+          "frame": 186
+        },
+        {
+          "label": "pass_received",
+          "frame": 213
+        },
+        {
+          "label": "pass",
+          "frame": 274
+        },
+        {
+          "label": "pass_received",
+          "frame": 306
+        },
+        {
+          "label": "pass",
+          "frame": 337
+        },
+        {
+          "label": "pass_received",
+          "frame": 373
+        },
+        {
+          "label": "pass",
+          "frame": 413
+        },
+        {
+          "label": "clearance",
+          "frame": 455
+        },
+        {
+          "label": "pass_received",
+          "frame": 516
+        },
+        {
+          "label": "pass",
+          "frame": 516
+        },
+        {
+          "label": "pass_received",
+          "frame": 556
+        },
+        {
+          "label": "pass",
+          "frame": 591
+        },
+        {
+          "label": "pass_received",
+          "frame": 623
+        },
+        {
+          "label": "pass",
+          "frame": 711
+        }
+      ]
+    },
+    {
+      "path": "clip_93/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "pass",
+          "frame": 79
+        },
+        {
+          "label": "pass_received",
+          "frame": 126
+        },
+        {
+          "label": "pass",
+          "frame": 126
+        },
+        {
+          "label": "pass_received",
+          "frame": 169
+        },
+        {
+          "label": "pass",
+          "frame": 190
+        },
+        {
+          "label": "pass_received",
+          "frame": 225
+        },
+        {
+          "label": "pass",
+          "frame": 316
+        },
+        {
+          "label": "pass_received",
+          "frame": 351
+        },
+        {
+          "label": "pass",
+          "frame": 382
+        },
+        {
+          "label": "interception",
+          "frame": 407
+        },
+        {
+          "label": "pass",
+          "frame": 407
+        },
+        {
+          "label": "aerial_duel",
+          "frame": 464
+        },
+        {
+          "label": "pass",
+          "frame": 464
+        },
+        {
+          "label": "interception",
+          "frame": 502
+        },
+        {
+          "label": "pass",
+          "frame": 502
+        },
+        {
+          "label": "pass_received",
+          "frame": 571
+        },
+        {
+          "label": "pass",
+          "frame": 594
+        },
+        {
+          "label": "pass_received",
+          "frame": 628
+        },
+        {
+          "label": "pass",
+          "frame": 628
+        },
+        {
+          "label": "interception",
+          "frame": 711
+        },
+        {
+          "label": "pass",
+          "frame": 735
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,174 @@
+{
+  "version": "1.0",
+  "date": "2025.06.06",
+  "videos": [
+    {
+      "path": "clip_97/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "pass",
+          "frame": 38
+        },
+        {
+          "label": "pass_received",
+          "frame": 96
+        },
+        {
+          "label": "pass",
+          "frame": 139
+        },
+        {
+          "label": "pass_received",
+          "frame": 157
+        },
+        {
+          "label": "pass",
+          "frame": 157
+        },
+        {
+          "label": "pass_received",
+          "frame": 179
+        },
+        {
+          "label": "pass",
+          "frame": 211
+        },
+        {
+          "label": "pass_received",
+          "frame": 260
+        },
+        {
+          "label": "pass",
+          "frame": 311
+        },
+        {
+          "label": "pass_received",
+          "frame": 338
+        },
+        {
+          "label": "pass",
+          "frame": 399
+        },
+        {
+          "label": "pass_received",
+          "frame": 431
+        },
+        {
+          "label": "pass",
+          "frame": 462
+        },
+        {
+          "label": "pass_received",
+          "frame": 498
+        },
+        {
+          "label": "pass",
+          "frame": 538
+        },
+        {
+          "label": "interception",
+          "frame": 580
+        },
+        {
+          "label": "pass",
+          "frame": 580
+        },
+        {
+          "label": "pass_received",
+          "frame": 641
+        },
+        {
+          "label": "pass",
+          "frame": 641
+        },
+        {
+          "label": "pass_received",
+          "frame": 681
+        },
+        {
+          "label": "pass",
+          "frame": 716
+        },
+        {
+          "label": "pass_received",
+          "frame": 748
+        }
+      ]
+    },
+    {
+      "path": "clip_98/224p.mp4",
+      "input_type": "video",
+      "annotations": [
+        {
+          "label": "pass_received",
+          "frame": 31
+        },
+        {
+          "label": "pass",
+          "frame": 58
+        },
+        {
+          "label": "pass_received",
+          "frame": 86
+        },
+        {
+          "label": "pass",
+          "frame": 215
+        },
+        {
+          "label": "pass_received",
+          "frame": 244
+        },
+        {
+          "label": "pass",
+          "frame": 280
+        },
+        {
+          "label": "aerial_duel",
+          "frame": 350
+        },
+        {
+          "label": "pass",
+          "frame": 350
+        },
+        {
+          "label": "pass_received",
+          "frame": 368
+        },
+        {
+          "label": "pass",
+          "frame": 454
+        },
+        {
+          "label": "pass_received",
+          "frame": 501
+        },
+        {
+          "label": "pass",
+          "frame": 501
+        },
+        {
+          "label": "pass_received",
+          "frame": 544
+        },
+        {
+          "label": "pass",
+          "frame": 565
+        },
+        {
+          "label": "pass_received",
+          "frame": 600
+        },
+        {
+          "label": "pass",
+          "frame": 691
+        },
+        {
+          "label": "pass_received",
+          "frame": 726
+        }
+      ]
+    }
+  ]
+}
