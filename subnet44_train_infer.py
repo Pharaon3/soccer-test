@@ -49,6 +49,15 @@ def run(cmd):
 
 
 def parse_raw_annotations(raw_list):
+    """
+    Each annotation needs "label" plus either "frame" (0-based index) or
+    "position" (milliseconds). If both exist, "frame" wins.
+
+    gameTime, team, and visibility are ignored if present.
+
+    Returns dicts with only what training needs: label, class_idx, model_frame,
+    raw_frame (no position / gameTime / team / visibility).
+    """
     anns = []
     for ann in raw_list:
         label = ann["label"].strip()
@@ -57,17 +66,22 @@ def parse_raw_annotations(raw_list):
             print(f"Skipping non-subnet44 label: {label}")
             continue
 
-        pos_ms = int(float(ann["position"]))
-        raw_frame = round(pos_ms / 1000 * FPS)
+        if "frame" in ann:
+            raw_frame = int(round(float(ann["frame"])))
+        elif "position" in ann:
+            pos_ms = int(float(ann["position"]))
+            raw_frame = int(round(pos_ms / 1000 * FPS))
+        else:
+            print(f"Skipping annotation without 'frame' or 'position': {ann!r}")
+            continue
+
         model_frame = raw_frame // STRIDE
 
         anns.append({
             "label": label,
             "class_idx": CLASS_TO_IDX[label],
             "model_frame": model_frame,
-            "position": pos_ms,
-            "team": ann.get("team", "unknown"),
-            "visibility": ann.get("visibility", "visible"),
+            "raw_frame": raw_frame,
         })
 
     print(f"Loaded subnet44 annotations: {len(anns)}")
@@ -261,7 +275,7 @@ class Subnet44Dataset(Dataset):
 
         if torch.rand(1).item() < 0.8:
             ann = self.annotations[torch.randint(0, len(self.annotations), (1,)).item()]
-            center_raw = ann["model_frame"] * STRIDE
+            center_raw = ann.get("raw_frame", ann["model_frame"] * STRIDE)
             start_raw = center_raw - RAW_FRAMES // 2
             start_raw = max(0, min(start_raw, max_start))
         else:
@@ -520,28 +534,19 @@ def infer(args):
         )
 
         for score, t, c in events:
-            raw_frame = start_raw + t * STRIDE
-            pos_ms = int(raw_frame / FPS * 1000)
+            raw_frame = int(start_raw + t * STRIDE)
 
             annotations.append({
-                "gameTime": f"1 - {pos_ms // 60000:02d}:{(pos_ms % 60000) // 1000:02d}",
                 "label": IDX_TO_CLASS[c],
-                "position": str(pos_ms),
-                "team": "unknown",
-                "visibility": "visible",
+                "frame": raw_frame,
                 "confidence": round(float(score), 4),
             })
 
-    annotations.sort(key=lambda x: int(x["position"]))
+    annotations.sort(key=lambda x: x["frame"])
 
-    result = {
-        "UrlLocal": str(args.video),
-        "UrlYoutube": "",
-        "annotations": annotations,
-    }
-
-    with open(args.output_json, "w") as f:
-        json.dump(result, f, indent=2)
+    with open(args.output_json, "w", encoding="utf-8") as f:
+        json.dump(annotations, f, indent=2, ensure_ascii=False)
+        f.write("\n")
 
     print("Saved:", args.output_json)
     print("Events:", len(annotations))
@@ -585,7 +590,11 @@ def main():
     p_infer = sub.add_parser("infer")
     p_infer.add_argument("--video", required=True)
     p_infer.add_argument("--checkpoint", required=True)
-    p_infer.add_argument("--output_json", default="subnet44_predictions.json")
+    p_infer.add_argument(
+        "--output_json",
+        default="subnet44_predictions.json",
+        help="JSON array of {label, frame, confidence} objects.",
+    )
     p_infer.add_argument("--work_dir", default="subnet44_infer")
 
     # Not threshold.
