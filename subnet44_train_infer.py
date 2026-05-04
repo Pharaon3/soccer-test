@@ -424,14 +424,14 @@ def train(args):
                 f"loss={total / len(loader):.4f}"
             )
 
-            torch.save(
-                _checkpoint_dict(model, args),
-                out_dir / f"{clip_key}_epoch_{epoch + 1}.pt",
-            )
-            torch.save(
-                _checkpoint_dict(model, args),
-                out_dir / f"global_epoch_{global_epoch}.pt",
-            )
+            # torch.save(
+            #     _checkpoint_dict(model, args),
+            #     out_dir / f"{clip_key}_epoch_{epoch + 1}.pt",
+            # )
+            # torch.save(
+            #     _checkpoint_dict(model, args),
+            #     out_dir / f"global_epoch_{global_epoch}.pt",
+            # )
 
         torch.save(
             _checkpoint_dict(model, args),

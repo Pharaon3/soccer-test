@@ -1,0 +1,59 @@
+======================= Infer Model =====================
+CUDA_VISIBLE_DEVICES=0 python3 subnet44_train_infer.py infer \
+--video path\to\video.mp4 \
+--checkpoint path\to\subnet44_big_from_zero.pt
+
+CUDA_VISIBLE_DEVICES=0 python3 subnet44_train_infer.py infer \
+--video path\to\video.mp4 \
+--checkpoint path\to\model.pt \
+--output_json preds.json \
+--work_dir subnet44_infer \
+--max_events_per_30s 25 \
+--min_gap_ms 400
+
+
+======================= Infer Model =====================
+CUDA_VISIBLE_DEVICES=0 python3 subnet44_train_infer.py infer \
+--video path\to\video.mp4 \
+--checkpoint path\to\model.pt \
+--output_json preds.json \
+--work_dir subnet44_infer \
+--max_events_per_30s 25 \
+--min_gap_ms 400
+
+======================= Train — single video + labels JSON =====================
+CUDA_VISIBLE_DEVICES=0 python3 subnet44_train_infer.py train \
+--video path\to\clip.mp4 \
+--labels path\to\Labels-scorevision.json
+
+CUDA_VISIBLE_DEVICES=0 python3 subnet44_train_infer.py train \
+--video path\to\clip.mp4 \
+--labels labels.json \
+--epochs 30 \
+--output_dir my_ckpts \
+--work_dir my_work
+
+======================= Train — multi-video =====================
+CUDA_VISIBLE_DEVICES=0 python3 subnet44_train_infer.py train \
+--clip_label_json clip-label.json
+
+CUDA_VISIBLE_DEVICES=0 python3 subnet44_train_infer.py train \
+--clip_label_json clip-label.json \
+--videos_dir ./videos \
+--epochs 2
+
+======================= Train — start from zero =====================
+CUDA_VISIBLE_DEVICES=0 python3 subnet44_train_infer.py train \
+--video path\to\clip.mp4 \
+--labels labels.json
+
+======================= Train — resume from a checkpoint =====================
+CUDA_VISIBLE_DEVICES=0 python3 subnet44_train_infer.py train \
+--clip_label_json clip-label.json 
+--resume subnet44_checkpoints\global_epoch_5.pt
+
+CUDA_VISIBLE_DEVICES=0 python3 subnet44_train_infer.py train \
+--video path\to\clip.mp4 \
+--labels labels.json \
+--resume subnet44_checkpoints\single_epoch_10.pt
+
